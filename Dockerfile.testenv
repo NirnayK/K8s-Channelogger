@@ -1,0 +1,37 @@
+########################################
+# Builder stage: compile the Go binary
+########################################
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /workspace
+COPY code/go.mod code/go.sum ./
+RUN go mod download
+
+COPY code/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-s -w" -o /workspace/webhook ./cmd/main.go
+
+#############################################
+# Final stage: minimal runtime environment  #
+#############################################
+FROM ubuntu:22.04 AS runner
+
+# install only what we need for TLS + VPN + sudo + PPP tools
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      openfortivpn \
+      ppp \
+      sudo \
+      bash \
+ && rm -rf /var/lib/apt/lists/*
+
+EXPOSE 8443
+VOLUME ["/certs"]
+
+COPY --from=builder /workspace/webhook /usr/local/bin/webhook
+COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+USER root
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["--tlsCertFile=/certs/tls.crt","--tlsKeyFile=/certs/tls.key"]
