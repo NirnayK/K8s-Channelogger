@@ -11,6 +11,10 @@ webhooks:
         path: "/validate"
       # provide the CA bundle that signed your webhook TLS cert here
       caBundle: REDACTED
+    matchConditions:
+    - name: exclude-p-and-multi
+      # only match when ns does NOT start with "p-<digits>" AND does NOT start with "multi-"
+      expression: "!(request.namespace.matches('^p-[0-9]+$') || request.namespace.matches('^multi-.*'))"
     rules:
       - operations: ["CREATE", "UPDATE"]
         apiGroups: ["*"]
