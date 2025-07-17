@@ -4,11 +4,11 @@ req_extensions     = v3_req
 prompt             = no
 
 [req_distinguished_name]
-CN = channelog-service.tir-webhooks.svc
+CN = channelog-service.channelog.svc
 
 [v3_req]
 subjectAltName = @alt_names
 
 [alt_names]
-DNS.1 = channelog-service.tir-webhooks.svc
-DNS.2 = channelog-service.tir-webhooks.svc.cluster.local
+DNS.1 = channelog-service.channelog.svc
+DNS.2 = channelog-service.channelog.svc.cluster.local
