@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: channelog
-  namespace: tir-webhooks
+  namespace: channelog
   labels:
     app: channelog
 spec:
@@ -72,7 +72,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: channelog-service
-  namespace: tir-webhooks
+  namespace: channelog
 spec:
   ports:
   - port: 443

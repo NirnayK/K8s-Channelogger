@@ -9,7 +9,7 @@
 #
 
 # Kubernetes Configuration
-K8S_NAMESPACE := tir-webhooks
+K8S_NAMESPACE := channelog
 ENV           ?= test
 PRODUCTION_ENV := production
 
