@@ -16,7 +16,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"channelog/config"
-	"channelog/rabbit"
 	"channelog/service"
 )
 
@@ -97,11 +96,6 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to load configuration")
 	}
 
-	// Create and start the RabbitManager to handle AMQP connection and channel pool.
-	rm := rabbit.NewRabbitManager(cfg)
-	rm.Start()
-	defer rm.Stop()
-
 	// Set up the Fiber HTTP server with panic recovery middleware.
 	app := fiber.New()
 	app.Use(recover.New())
@@ -112,26 +106,8 @@ func main() {
 	})
 
 	// Register admission channelog endpoints.
-	app.Post(("/node"), func(c *fiber.Ctx) error {
-		return service.NodeService(c, cfg, rm)
-	})
-	app.Post("/binding", func(c *fiber.Ctx) error {
-		return service.PodBindingService(c, cfg, rm)
-	})
-	app.Post("/status", func(c *fiber.Ctx) error {
-		return service.PodStatusService(c, cfg, rm)
-	})
-	app.Post("/delete", func(c *fiber.Ctx) error {
-		return service.PodDeleteService(c, cfg, rm)
-	})
-	app.Post("/keda", func(c *fiber.Ctx) error {
-		return service.KedaService(c, cfg, rm)
-	})
-	app.Post("/workflow", func(c *fiber.Ctx) error {
-		return service.WorkflowService(c, cfg, rm)
-	})
-	app.Post("/inference-hpa", func(c *fiber.Ctx) error {
-		return service.InferenceHpaService(c, cfg, rm)
+	app.Post(("/validate"), func(c *fiber.Ctx) error {
+		return service.ValidateService(c, cfg, rm)
 	})
 
 	// Start listening with TLS, using the ADDR environment variable if set.

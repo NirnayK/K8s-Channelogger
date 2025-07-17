@@ -16,7 +16,7 @@ COPY code/ ./
 # Build a statically-linked binary including all imports
 RUN CGO_ENABLED=0 \
     GOOS=linux \
-    go build -a -ldflags="-s -w" -o /workspace/webhook ./cmd/main.go
+    go build -a -ldflags="-s -w" -o /workspace/channelog ./cmd/main.go
 
 #############################################
 # Final stage: minimal runtime environment   #
@@ -33,10 +33,10 @@ EXPOSE 8443
 VOLUME ["/certs"]
 
 # Copy the built binary
-COPY --from=builder /workspace/webhook /usr/local/bin/webhook
+COPY --from=builder /workspace/channelog /usr/local/bin/channelog
 
 # Switch to non-root user for security
 USER nobody:nogroup
 
 # Entrypoint with flags pointing at the mounted TLS cert files
-ENTRYPOINT ["/usr/local/bin/webhook", "--tlsCertFile=/certs/server.crt", "--tlsKeyFile=/certs/server.key"]
+ENTRYPOINT ["/usr/local/bin/channelog", "--tlsCertFile=/certs/server.crt", "--tlsKeyFile=/certs/server.key"]

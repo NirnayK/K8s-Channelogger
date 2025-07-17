@@ -2,10 +2,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: admission-channelog
+  name: channelog
   namespace: tir-webhooks
   labels:
-    app: admission-channelog
+    app: channelog
 spec:
   replicas: 1
   strategy:
@@ -15,11 +15,11 @@ spec:
       maxSurge: 0
   selector:
     matchLabels:
-      app: admission-channelog
+      app: channelog
   template:
     metadata:
       labels:
-        app: admission-channelog
+        app: channelog
     spec:
       restartPolicy: Always
       # mount the host's /dev/ppp
@@ -34,7 +34,7 @@ spec:
 
       containers:
       - name: channelog
-        image: nirnaye2e/admission-channelog:v2.2
+        image: nirnaye2e/channelog:v2.2
         imagePullPolicy: Always
         args:
           - --tlsCertFile=/certs/tls.crt
@@ -87,4 +87,4 @@ spec:
     protocol: TCP
     name: https
   selector:
-    app: admission-channelog
+    app: channelog

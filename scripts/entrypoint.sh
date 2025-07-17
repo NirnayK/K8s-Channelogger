@@ -11,11 +11,11 @@ if [[ ! -c /dev/ppp ]]; then
 fi
 
 # 2. Start VPN once (will bring up ppp0)
-log "Starting VPN to $MYVPN_STAGE_VPN_IP"
-sudo -n openfortivpn "$MYVPN_STAGE_VPN_IP" \
-    -u "$MYVPN_STAGE_VPN_USER" \
-    -p "$MYVPN_STAGE_VPN_PASSWORD" \
-    --trusted-cert "$MYVPN_STAGE_VPN_CERT" &
+log "Starting VPN to $MYVPN_PROD_VPN_IP"
+sudo -n openfortivpn "$MYVPN_PROD_VPN_IP" \
+    -u "$MYVPN_PROD_VPN_USER" \
+    -p "$MYVPN_PROD_VPN_PASSWORD" \
+    --trusted-cert "$MYVPN_PROD_VPN_CERT" &
 vpn_pid=$!
 trap 'log "Shutting down VPN"; kill "$vpn_pid" 2>/dev/null || true' EXIT
 
