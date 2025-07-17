@@ -11,9 +11,6 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 
 	"channelog/config"
-	"channelog/constants"
-	"channelog/rabbit"
-	"channelog/task"
 )
 
 // ValidatorFunc defines the signature for a validation function.
@@ -37,9 +34,7 @@ type ValidatorFunc func(request *admissionv1.AdmissionRequest) (bool, error)
 func HandleReview(
 	c *fiber.Ctx,
 	cfg *config.Config,
-	rm *rabbit.RabbitManager,
 	validate ValidatorFunc,
-	taskName string,
 ) error {
 	// 1) Parse the incoming AdmissionReview JSON from the request body.
 	var review admissionv1.AdmissionReview
@@ -73,8 +68,8 @@ func HandleReview(
 	}
 
 	// 4) If validation passed (valid==true and no error), enqueue the corresponding task.
-	if valid && err == nil && taskName != constants.DummyTask {
-		task.PushTask(&review, taskName, rm, cfg)
+	if valid && err == nil  {
+		// task.PushTask(&review, taskName, rm, cfg)
 	}
 
 	// 5) Construct and return an AdmissionResponse with Allowed=true.
