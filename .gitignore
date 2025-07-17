@@ -1,0 +1,4 @@
+.DS_Store
+deploy/testenv/secret_*.yaml
+tls/certs
+*.code-workspace

@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test
+  namespace: p-1941
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: test
+  template:
+    metadata:
+      labels:
+        app: test
+    spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command:
+          - sh
+          - -c
+          - sleep 3600
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "10Mi"
+            ephemeral-storage: "100Mi"
+          limits:
+            cpu: "100m"
+            memory: "10Mi"
+            ephemeral-storage: "100Mi"

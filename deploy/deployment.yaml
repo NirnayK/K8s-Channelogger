@@ -1,0 +1,83 @@
+# deploy/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admission-channelog
+  namespace: tir-webhooks
+  labels:
+    app: admission-channelog
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
+  selector:
+    matchLabels:
+      app: admission-channelog
+  template:
+    metadata:
+      labels:
+        app: admission-channelog
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: admission-channelog
+                topologyKey: kubernetes.io/hostname
+      # mount the host's /dev/ppp
+      volumes:
+      - name: cert
+        secret:
+          secretName: channelog-certs
+
+      containers:
+      - name: channelog
+        image: registry.e2enetworks.net/aimle2e/admission-channelog:v2
+        imagePullPolicy: Always
+        args:
+          - --tlsCertFile=/certs/tls.crt
+          - --tlsKeyFile=/certs/tls.key
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: cert
+          mountPath: /certs
+          readOnly: true
+        envFrom:
+        - secretRef:
+            name: channelog-certs
+        env:
+        - name: MAX_CHANNEL_POOL_SIZE
+          value: "50"
+        ports:
+        - containerPort: 8443
+          name: https
+        resources:
+          requests:
+            cpu: "1"
+            memory: "1Gi"
+            ephemeral-storage: "10Gi"
+          limits:
+            cpu: "2"
+            memory: "2Gi"
+            ephemeral-storage: "10Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: channelog-service
+  namespace: tir-webhooks
+spec:
+  ports:
+  - port: 443
+    targetPort: https
+    protocol: TCP
+    name: https
+  selector:
+    app: admission-channelog
