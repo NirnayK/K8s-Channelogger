@@ -107,7 +107,7 @@ func main() {
 
 	// Register admission channelog endpoints.
 	app.Post(("/validate"), func(c *fiber.Ctx) error {
-		return service.ValidateService(c, cfg, rm)
+		return service.ValidateService(c, cfg)
 	})
 
 	// Start listening with TLS, using the ADDR environment variable if set.

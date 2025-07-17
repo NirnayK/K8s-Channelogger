@@ -6,8 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"channelog/config"
-	"channelog/constants"
-	"channelog/rabbit"
 	"channelog/validation"
 )
 
@@ -21,7 +19,6 @@ import (
 func ValidateService(
 	c *fiber.Ctx,
 	cfg *config.Config,
-	rm *rabbit.RabbitManager,
 ) error {
-	return HandleReview(c, cfg, rm, validation.ValidateBindingPod, constants.PodNodeBindingTask)
+	return HandleReview(c, cfg, validation.ValidateBindingPod)
 }
