@@ -87,10 +87,10 @@ k8s-deploy-update: update-rabbitmq-url ## Patch deployment.yaml with new image a
 	fi
 	kubectl apply -f $(CONFIG_FILE)
 	kubectl apply -f $(DEPLOYMENT_FILE)
-	kubectl -n $(K8S_NAMESPACE) rollout restart deployment/admission-webhook
+	kubectl -n $(K8S_NAMESPACE) rollout restart deployment/channelog
 
 	@echo "⏳ Waiting for rollout to finish…"
-	kubectl rollout status deployment/admission-webhook -n $(K8S_NAMESPACE)
+	kubectl rollout status deployment/channelog -n $(K8S_NAMESPACE)
 
 ## Regenerate certs, patch deployment, and rollout.
 k8s-deploy-full: cert-refresh k8s-deploy-update ## Regenerate certs, patch deployment, and rollout (ENV=$(PRODUCTION_ENV) uses deploy/, others use deploy/testenv/).

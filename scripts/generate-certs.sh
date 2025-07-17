@@ -22,7 +22,7 @@ cp "$SAN_CFG" "$CERT_DIR/channelog-openssl.cnf"
 openssl genrsa -out "$CERT_DIR/ca.key" 2048
 openssl req -x509 -new -nodes \
   -key "$CERT_DIR/ca.key" \
-  -subj "/CN=admission-channelog-ca" \
+  -subj "/CN=channelog-ca" \
   -days $((VALIDITY_DAYS * 10)) \
   -out "$CERT_DIR/ca.crt"
 

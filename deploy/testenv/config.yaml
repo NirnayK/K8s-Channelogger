@@ -1,170 +1,44 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: pod-event-channelog
+  name: all-resources-namespaced-channelog-webhook
 webhooks:
-  # Node Events Webhook
-  - name: node.tir-webhooks.cluster.local
+  - name: spec-sync-ns.yourdomain.com
     clientConfig:
       service:
         name: channelog-service
-        namespace: tir-webhooks
-        path: /node
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIekNDQWdlZ0F3SUJBZ0lVVEtNekFxc0xFTGhSY1Q2ZHh1TVNuNjdhQzE4d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0h6RWRNQnNHQTFVRUF3d1VZV1J0YVhOemFXOXVMWGRsWW1odmIyc3RZMkV3SGhjTk1qVXdOekUzTURZMQpPVFUxV2hjTk16VXdOekUxTURZMU9UVTFXakFmTVIwd0d3WURWUVFEREJSaFpHMXBjM05wYjI0dGQyVmlhRzl2CmF5MWpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFMQ2dWUUhLY1RxT0JyNWsKTjA4NkpCay9jTTlITkF4cUFCY0pvelRFOS95NGNyZEM2a3M0WjVyOVc5QlhrQldvODdMbW9QM3Y3NzFESE9MUQoyVzRUNWpZOHYvSkVmV1NlcEowdnRJZ0RWRmlCZnpZK2R2RTdWUHp4Znk2NWhHL1VxeUtKemhLcG4wa3JJZGRJClVyWUVNQ3lvSkhSTUJKQVV5TkEybXZnWjVlb1dOY25Gbld2L2ZTRkZsWlF5M3NOK0pBbEJ2VXdZQk9uOEI2K0cKK1ArQ2tWc3dBRGU0ZDJvdDV2bWNPVE9DNXFnZ2tqMW1CZDR5NXVFZVZnaXIyaFc3S05JdnRRNWN5eXUxeDNMNApVZWlxY1FEeFZ3MjBhbnhXVmV5YjdlTmlDZmNwWS9GcDJtQ284STIvUjBxcDBjK3NuRWFKRFBZaUI4L1ZONGZRCjJGV043M1VDQXdFQUFhTlRNRkV3SFFZRFZSME9CQllFRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1COEcKQTFVZEl3UVlNQmFBRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4dwpEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRHVpVE8yTFJRUHFSY0l5dVFqR3QxVk1ZMytxeDJVakNhZlBEc09BCk5qL0ZyZkFIajhWK2poRlRCSUllUjNPYkwzVFlqU3lxVDRicGNTakFIcWg3ZEJVbXN2bTdob0pXWW1OMUhGV1AKUCtwMWFpQk9sV1FSTGNRenREVWl0eXJjUDZzcVRSZjMrZEpGRVY1a0c0ODZMbSt6bk1halA2UDJZYWlvRkI1eQorK2pINElXYkpCZkg1M0dzWjM4QXFUWXRVbmg1bjRVNkQvNUxOZURWcktLNzVHTitYMmVodGx4MzBFcVRFWWxkCmR2UDZGTk03dVhlR1NYSk96NmcwVzJnVFFqWHRUOEJIazQ2a29XTkJNZnBkSkhPRzZtU3NvREMwSm5tcFVCZnUKOUdTdmd5OURYOUgwL2hRYWdsMGI5NmJSR01LZmxQdHBkYklpaTA1dnNnbVBRUFU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+        namespace: channelog
+        path: "/validate"
+      # provide the CA bundle that signed your webhook TLS cert here
+      caBundle: REDACTED
     rules:
-      - operations: ["CREATE", "DELETE"]
+      - operations: ["CREATE", "UPDATE"]
         apiGroups: ["*"]
         apiVersions: ["*"]
-        resources: ["nodes"]
-        scope: "Cluster"
+        resources: ["*"]        # all root (non-subresource) resources
+        scope: Namespaced       # only namespaced objects
     admissionReviewVersions: ["v1"]
     sideEffects: None
-    timeoutSeconds: 5
-  # Pod Node Binding Webhook
-  - name: pod-binding.tir-webhooks.cluster.local
+    timeoutSeconds: 10
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: all-resources-cluster-channelog-webhook
+webhooks:
+  - name: spec-sync-cluster.yourdomain.com
     clientConfig:
       service:
         name: channelog-service
-        namespace: tir-webhooks
-        path: /binding
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIekNDQWdlZ0F3SUJBZ0lVVEtNekFxc0xFTGhSY1Q2ZHh1TVNuNjdhQzE4d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0h6RWRNQnNHQTFVRUF3d1VZV1J0YVhOemFXOXVMWGRsWW1odmIyc3RZMkV3SGhjTk1qVXdOekUzTURZMQpPVFUxV2hjTk16VXdOekUxTURZMU9UVTFXakFmTVIwd0d3WURWUVFEREJSaFpHMXBjM05wYjI0dGQyVmlhRzl2CmF5MWpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFMQ2dWUUhLY1RxT0JyNWsKTjA4NkpCay9jTTlITkF4cUFCY0pvelRFOS95NGNyZEM2a3M0WjVyOVc5QlhrQldvODdMbW9QM3Y3NzFESE9MUQoyVzRUNWpZOHYvSkVmV1NlcEowdnRJZ0RWRmlCZnpZK2R2RTdWUHp4Znk2NWhHL1VxeUtKemhLcG4wa3JJZGRJClVyWUVNQ3lvSkhSTUJKQVV5TkEybXZnWjVlb1dOY25Gbld2L2ZTRkZsWlF5M3NOK0pBbEJ2VXdZQk9uOEI2K0cKK1ArQ2tWc3dBRGU0ZDJvdDV2bWNPVE9DNXFnZ2tqMW1CZDR5NXVFZVZnaXIyaFc3S05JdnRRNWN5eXUxeDNMNApVZWlxY1FEeFZ3MjBhbnhXVmV5YjdlTmlDZmNwWS9GcDJtQ284STIvUjBxcDBjK3NuRWFKRFBZaUI4L1ZONGZRCjJGV043M1VDQXdFQUFhTlRNRkV3SFFZRFZSME9CQllFRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1COEcKQTFVZEl3UVlNQmFBRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4dwpEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRHVpVE8yTFJRUHFSY0l5dVFqR3QxVk1ZMytxeDJVakNhZlBEc09BCk5qL0ZyZkFIajhWK2poRlRCSUllUjNPYkwzVFlqU3lxVDRicGNTakFIcWg3ZEJVbXN2bTdob0pXWW1OMUhGV1AKUCtwMWFpQk9sV1FSTGNRenREVWl0eXJjUDZzcVRSZjMrZEpGRVY1a0c0ODZMbSt6bk1halA2UDJZYWlvRkI1eQorK2pINElXYkpCZkg1M0dzWjM4QXFUWXRVbmg1bjRVNkQvNUxOZURWcktLNzVHTitYMmVodGx4MzBFcVRFWWxkCmR2UDZGTk03dVhlR1NYSk96NmcwVzJnVFFqWHRUOEJIazQ2a29XTkJNZnBkSkhPRzZtU3NvREMwSm5tcFVCZnUKOUdTdmd5OURYOUgwL2hRYWdsMGI5NmJSR01LZmxQdHBkYklpaTA1dnNnbVBRUFU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-    matchConditions:
-      - name: customer-namespace
-        expression: |
-          request.namespace.matches("^p-[0-9]+$") ||
-          request.namespace.matches("^multi-[0-9]+$")
+        namespace: channelog
+        path: "/validate"
+      caBundle: REDACTED
     rules:
-      - operations: ["*"]
+      - operations: ["CREATE", "UPDATE"]
         apiGroups: ["*"]
         apiVersions: ["*"]
-        resources: ["pods/binding"]
+        resources: ["*"]        # all root (non-subresource) resources
+        scope: Cluster          # only cluster-scoped objects
     admissionReviewVersions: ["v1"]
     sideEffects: None
-    timeoutSeconds: 5
-  # Pod Status Webhook
-  - name: pod-status.tir-webhooks.cluster.local
-    clientConfig:
-      service:
-        name: channelog-service
-        namespace: tir-webhooks
-        path: /status
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIekNDQWdlZ0F3SUJBZ0lVVEtNekFxc0xFTGhSY1Q2ZHh1TVNuNjdhQzE4d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0h6RWRNQnNHQTFVRUF3d1VZV1J0YVhOemFXOXVMWGRsWW1odmIyc3RZMkV3SGhjTk1qVXdOekUzTURZMQpPVFUxV2hjTk16VXdOekUxTURZMU9UVTFXakFmTVIwd0d3WURWUVFEREJSaFpHMXBjM05wYjI0dGQyVmlhRzl2CmF5MWpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFMQ2dWUUhLY1RxT0JyNWsKTjA4NkpCay9jTTlITkF4cUFCY0pvelRFOS95NGNyZEM2a3M0WjVyOVc5QlhrQldvODdMbW9QM3Y3NzFESE9MUQoyVzRUNWpZOHYvSkVmV1NlcEowdnRJZ0RWRmlCZnpZK2R2RTdWUHp4Znk2NWhHL1VxeUtKemhLcG4wa3JJZGRJClVyWUVNQ3lvSkhSTUJKQVV5TkEybXZnWjVlb1dOY25Gbld2L2ZTRkZsWlF5M3NOK0pBbEJ2VXdZQk9uOEI2K0cKK1ArQ2tWc3dBRGU0ZDJvdDV2bWNPVE9DNXFnZ2tqMW1CZDR5NXVFZVZnaXIyaFc3S05JdnRRNWN5eXUxeDNMNApVZWlxY1FEeFZ3MjBhbnhXVmV5YjdlTmlDZmNwWS9GcDJtQ284STIvUjBxcDBjK3NuRWFKRFBZaUI4L1ZONGZRCjJGV043M1VDQXdFQUFhTlRNRkV3SFFZRFZSME9CQllFRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1COEcKQTFVZEl3UVlNQmFBRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4dwpEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRHVpVE8yTFJRUHFSY0l5dVFqR3QxVk1ZMytxeDJVakNhZlBEc09BCk5qL0ZyZkFIajhWK2poRlRCSUllUjNPYkwzVFlqU3lxVDRicGNTakFIcWg3ZEJVbXN2bTdob0pXWW1OMUhGV1AKUCtwMWFpQk9sV1FSTGNRenREVWl0eXJjUDZzcVRSZjMrZEpGRVY1a0c0ODZMbSt6bk1halA2UDJZYWlvRkI1eQorK2pINElXYkpCZkg1M0dzWjM4QXFUWXRVbmg1bjRVNkQvNUxOZURWcktLNzVHTitYMmVodGx4MzBFcVRFWWxkCmR2UDZGTk03dVhlR1NYSk96NmcwVzJnVFFqWHRUOEJIazQ2a29XTkJNZnBkSkhPRzZtU3NvREMwSm5tcFVCZnUKOUdTdmd5OURYOUgwL2hRYWdsMGI5NmJSR01LZmxQdHBkYklpaTA1dnNnbVBRUFU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-    matchConditions:
-      - name: customer-namespace
-        expression: |
-          request.namespace.matches("^p-[0-9]+$") ||
-          request.namespace.matches("^multi-[0-9]+$")
-    rules:
-      - operations: ["UPDATE"]
-        apiGroups: ["*"]
-        apiVersions: ["*"]
-        resources: ["pods/status"]
-    admissionReviewVersions: ["v1"]
-    sideEffects: None
-    timeoutSeconds: 5
-  # Pod Delete Webhook
-  - name: pod-delete.tir-webhooks.cluster.local
-    clientConfig:
-      service:
-        name: channelog-service
-        namespace: tir-webhooks
-        path: /delete
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIekNDQWdlZ0F3SUJBZ0lVVEtNekFxc0xFTGhSY1Q2ZHh1TVNuNjdhQzE4d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0h6RWRNQnNHQTFVRUF3d1VZV1J0YVhOemFXOXVMWGRsWW1odmIyc3RZMkV3SGhjTk1qVXdOekUzTURZMQpPVFUxV2hjTk16VXdOekUxTURZMU9UVTFXakFmTVIwd0d3WURWUVFEREJSaFpHMXBjM05wYjI0dGQyVmlhRzl2CmF5MWpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFMQ2dWUUhLY1RxT0JyNWsKTjA4NkpCay9jTTlITkF4cUFCY0pvelRFOS95NGNyZEM2a3M0WjVyOVc5QlhrQldvODdMbW9QM3Y3NzFESE9MUQoyVzRUNWpZOHYvSkVmV1NlcEowdnRJZ0RWRmlCZnpZK2R2RTdWUHp4Znk2NWhHL1VxeUtKemhLcG4wa3JJZGRJClVyWUVNQ3lvSkhSTUJKQVV5TkEybXZnWjVlb1dOY25Gbld2L2ZTRkZsWlF5M3NOK0pBbEJ2VXdZQk9uOEI2K0cKK1ArQ2tWc3dBRGU0ZDJvdDV2bWNPVE9DNXFnZ2tqMW1CZDR5NXVFZVZnaXIyaFc3S05JdnRRNWN5eXUxeDNMNApVZWlxY1FEeFZ3MjBhbnhXVmV5YjdlTmlDZmNwWS9GcDJtQ284STIvUjBxcDBjK3NuRWFKRFBZaUI4L1ZONGZRCjJGV043M1VDQXdFQUFhTlRNRkV3SFFZRFZSME9CQllFRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1COEcKQTFVZEl3UVlNQmFBRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4dwpEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRHVpVE8yTFJRUHFSY0l5dVFqR3QxVk1ZMytxeDJVakNhZlBEc09BCk5qL0ZyZkFIajhWK2poRlRCSUllUjNPYkwzVFlqU3lxVDRicGNTakFIcWg3ZEJVbXN2bTdob0pXWW1OMUhGV1AKUCtwMWFpQk9sV1FSTGNRenREVWl0eXJjUDZzcVRSZjMrZEpGRVY1a0c0ODZMbSt6bk1halA2UDJZYWlvRkI1eQorK2pINElXYkpCZkg1M0dzWjM4QXFUWXRVbmg1bjRVNkQvNUxOZURWcktLNzVHTitYMmVodGx4MzBFcVRFWWxkCmR2UDZGTk03dVhlR1NYSk96NmcwVzJnVFFqWHRUOEJIazQ2a29XTkJNZnBkSkhPRzZtU3NvREMwSm5tcFVCZnUKOUdTdmd5OURYOUgwL2hRYWdsMGI5NmJSR01LZmxQdHBkYklpaTA1dnNnbVBRUFU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-    matchConditions:
-      - name: customer-namespace
-        expression: |
-          request.namespace.matches("^p-[0-9]+$") ||
-          request.namespace.matches("^multi-[0-9]+$")
-    rules:
-      - operations: ["DELETE"]
-        apiGroups: ["*"]
-        apiVersions: ["*"]
-        resources: ["pods"]
-    admissionReviewVersions: ["v1"]
-    sideEffects: None
-    timeoutSeconds: 5
-  # Keda Webhook
-  - name: keda.tir-webhooks.cluster.local
-    clientConfig:
-      service:
-        name: channelog-service
-        namespace: tir-webhooks
-        path: /keda
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIekNDQWdlZ0F3SUJBZ0lVVEtNekFxc0xFTGhSY1Q2ZHh1TVNuNjdhQzE4d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0h6RWRNQnNHQTFVRUF3d1VZV1J0YVhOemFXOXVMWGRsWW1odmIyc3RZMkV3SGhjTk1qVXdOekUzTURZMQpPVFUxV2hjTk16VXdOekUxTURZMU9UVTFXakFmTVIwd0d3WURWUVFEREJSaFpHMXBjM05wYjI0dGQyVmlhRzl2CmF5MWpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFMQ2dWUUhLY1RxT0JyNWsKTjA4NkpCay9jTTlITkF4cUFCY0pvelRFOS95NGNyZEM2a3M0WjVyOVc5QlhrQldvODdMbW9QM3Y3NzFESE9MUQoyVzRUNWpZOHYvSkVmV1NlcEowdnRJZ0RWRmlCZnpZK2R2RTdWUHp4Znk2NWhHL1VxeUtKemhLcG4wa3JJZGRJClVyWUVNQ3lvSkhSTUJKQVV5TkEybXZnWjVlb1dOY25Gbld2L2ZTRkZsWlF5M3NOK0pBbEJ2VXdZQk9uOEI2K0cKK1ArQ2tWc3dBRGU0ZDJvdDV2bWNPVE9DNXFnZ2tqMW1CZDR5NXVFZVZnaXIyaFc3S05JdnRRNWN5eXUxeDNMNApVZWlxY1FEeFZ3MjBhbnhXVmV5YjdlTmlDZmNwWS9GcDJtQ284STIvUjBxcDBjK3NuRWFKRFBZaUI4L1ZONGZRCjJGV043M1VDQXdFQUFhTlRNRkV3SFFZRFZSME9CQllFRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1COEcKQTFVZEl3UVlNQmFBRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4dwpEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRHVpVE8yTFJRUHFSY0l5dVFqR3QxVk1ZMytxeDJVakNhZlBEc09BCk5qL0ZyZkFIajhWK2poRlRCSUllUjNPYkwzVFlqU3lxVDRicGNTakFIcWg3ZEJVbXN2bTdob0pXWW1OMUhGV1AKUCtwMWFpQk9sV1FSTGNRenREVWl0eXJjUDZzcVRSZjMrZEpGRVY1a0c0ODZMbSt6bk1halA2UDJZYWlvRkI1eQorK2pINElXYkpCZkg1M0dzWjM4QXFUWXRVbmg1bjRVNkQvNUxOZURWcktLNzVHTitYMmVodGx4MzBFcVRFWWxkCmR2UDZGTk03dVhlR1NYSk96NmcwVzJnVFFqWHRUOEJIazQ2a29XTkJNZnBkSkhPRzZtU3NvREMwSm5tcFVCZnUKOUdTdmd5OURYOUgwL2hRYWdsMGI5NmJSR01LZmxQdHBkYklpaTA1dnNnbVBRUFU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-    rules:
-      - operations: ["CREATE", "UPDATE", "DELETE"]
-        apiGroups: ["*"]
-        apiVersions: ["*"]
-        resources: ["deployments", "deployments/scale", "deployments/status"]
-    namespaceSelector:
-      matchLabels:
-        kubernetes.io/metadata.name: keda
-    objectSelector:
-      matchLabels:
-        app.kubernetes.io/component: scaler
-        app.kubernetes.io/instance: http-add-on
-        app.kubernetes.io/part-of: keda-add-ons-http
-    admissionReviewVersions: ["v1"]
-    sideEffects: None
-    timeoutSeconds: 5
-  # Workflow General Webhook
-  - name: workflow-normal.tir-webhooks.cluster.local
-    clientConfig:
-      service:
-        name: channelog-service
-        namespace: tir-webhooks
-        path: /workflow
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIekNDQWdlZ0F3SUJBZ0lVVEtNekFxc0xFTGhSY1Q2ZHh1TVNuNjdhQzE4d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0h6RWRNQnNHQTFVRUF3d1VZV1J0YVhOemFXOXVMWGRsWW1odmIyc3RZMkV3SGhjTk1qVXdOekUzTURZMQpPVFUxV2hjTk16VXdOekUxTURZMU9UVTFXakFmTVIwd0d3WURWUVFEREJSaFpHMXBjM05wYjI0dGQyVmlhRzl2CmF5MWpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFMQ2dWUUhLY1RxT0JyNWsKTjA4NkpCay9jTTlITkF4cUFCY0pvelRFOS95NGNyZEM2a3M0WjVyOVc5QlhrQldvODdMbW9QM3Y3NzFESE9MUQoyVzRUNWpZOHYvSkVmV1NlcEowdnRJZ0RWRmlCZnpZK2R2RTdWUHp4Znk2NWhHL1VxeUtKemhLcG4wa3JJZGRJClVyWUVNQ3lvSkhSTUJKQVV5TkEybXZnWjVlb1dOY25Gbld2L2ZTRkZsWlF5M3NOK0pBbEJ2VXdZQk9uOEI2K0cKK1ArQ2tWc3dBRGU0ZDJvdDV2bWNPVE9DNXFnZ2tqMW1CZDR5NXVFZVZnaXIyaFc3S05JdnRRNWN5eXUxeDNMNApVZWlxY1FEeFZ3MjBhbnhXVmV5YjdlTmlDZmNwWS9GcDJtQ284STIvUjBxcDBjK3NuRWFKRFBZaUI4L1ZONGZRCjJGV043M1VDQXdFQUFhTlRNRkV3SFFZRFZSME9CQllFRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1COEcKQTFVZEl3UVlNQmFBRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4dwpEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRHVpVE8yTFJRUHFSY0l5dVFqR3QxVk1ZMytxeDJVakNhZlBEc09BCk5qL0ZyZkFIajhWK2poRlRCSUllUjNPYkwzVFlqU3lxVDRicGNTakFIcWg3ZEJVbXN2bTdob0pXWW1OMUhGV1AKUCtwMWFpQk9sV1FSTGNRenREVWl0eXJjUDZzcVRSZjMrZEpGRVY1a0c0ODZMbSt6bk1halA2UDJZYWlvRkI1eQorK2pINElXYkpCZkg1M0dzWjM4QXFUWXRVbmg1bjRVNkQvNUxOZURWcktLNzVHTitYMmVodGx4MzBFcVRFWWxkCmR2UDZGTk03dVhlR1NYSk96NmcwVzJnVFFqWHRUOEJIazQ2a29XTkJNZnBkSkhPRzZtU3NvREMwSm5tcFVCZnUKOUdTdmd5OURYOUgwL2hRYWdsMGI5NmJSR01LZmxQdHBkYklpaTA1dnNnbVBRUFU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-    rules:
-      - apiGroups: ["argoproj.io"]
-        operations: ["CREATE", "UPDATE", "DELETE"]
-        apiVersions: ["v1alpha1"]
-        resources: ["workflows", "workflows/status"]
-        scope: "Namespaced"
-    admissionReviewVersions: ["v1"]
-    sideEffects: None
-    timeoutSeconds: 5
-  # Inference HPA Create/Delete Webhook
-  - name: hpa.tir-webhooks.cluster.local
-    clientConfig:
-      service:
-        name: channelog-service
-        namespace: tir-webhooks
-        path: /inference-hpa
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIekNDQWdlZ0F3SUJBZ0lVVEtNekFxc0xFTGhSY1Q2ZHh1TVNuNjdhQzE4d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0h6RWRNQnNHQTFVRUF3d1VZV1J0YVhOemFXOXVMWGRsWW1odmIyc3RZMkV3SGhjTk1qVXdOekUzTURZMQpPVFUxV2hjTk16VXdOekUxTURZMU9UVTFXakFmTVIwd0d3WURWUVFEREJSaFpHMXBjM05wYjI0dGQyVmlhRzl2CmF5MWpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFMQ2dWUUhLY1RxT0JyNWsKTjA4NkpCay9jTTlITkF4cUFCY0pvelRFOS95NGNyZEM2a3M0WjVyOVc5QlhrQldvODdMbW9QM3Y3NzFESE9MUQoyVzRUNWpZOHYvSkVmV1NlcEowdnRJZ0RWRmlCZnpZK2R2RTdWUHp4Znk2NWhHL1VxeUtKemhLcG4wa3JJZGRJClVyWUVNQ3lvSkhSTUJKQVV5TkEybXZnWjVlb1dOY25Gbld2L2ZTRkZsWlF5M3NOK0pBbEJ2VXdZQk9uOEI2K0cKK1ArQ2tWc3dBRGU0ZDJvdDV2bWNPVE9DNXFnZ2tqMW1CZDR5NXVFZVZnaXIyaFc3S05JdnRRNWN5eXUxeDNMNApVZWlxY1FEeFZ3MjBhbnhXVmV5YjdlTmlDZmNwWS9GcDJtQ284STIvUjBxcDBjK3NuRWFKRFBZaUI4L1ZONGZRCjJGV043M1VDQXdFQUFhTlRNRkV3SFFZRFZSME9CQllFRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1COEcKQTFVZEl3UVlNQmFBRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4dwpEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRHVpVE8yTFJRUHFSY0l5dVFqR3QxVk1ZMytxeDJVakNhZlBEc09BCk5qL0ZyZkFIajhWK2poRlRCSUllUjNPYkwzVFlqU3lxVDRicGNTakFIcWg3ZEJVbXN2bTdob0pXWW1OMUhGV1AKUCtwMWFpQk9sV1FSTGNRenREVWl0eXJjUDZzcVRSZjMrZEpGRVY1a0c0ODZMbSt6bk1halA2UDJZYWlvRkI1eQorK2pINElXYkpCZkg1M0dzWjM4QXFUWXRVbmg1bjRVNkQvNUxOZURWcktLNzVHTitYMmVodGx4MzBFcVRFWWxkCmR2UDZGTk03dVhlR1NYSk96NmcwVzJnVFFqWHRUOEJIazQ2a29XTkJNZnBkSkhPRzZtU3NvREMwSm5tcFVCZnUKOUdTdmd5OURYOUgwL2hRYWdsMGI5NmJSR01LZmxQdHBkYklpaTA1dnNnbVBRUFU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-    matchConditions:
-      - name: customer-namespace
-        expression: |
-          request.namespace.matches("^p-[0-9]+$") ||
-          request.namespace.matches("^multi-[0-9]+$")
-    rules:
-      - operations: ["CREATE", "DELETE"]
-        apiGroups: ["autoscaling"]
-        apiVersions: ["v2"]
-        resources: ["horizontalpodautoscalers"]
-        scope: Namespaced
-    admissionReviewVersions: ["v1"]
-    sideEffects: None
-    timeoutSeconds: 5
-  # Inference HPA Update Webhook
-  - name: hpa-status.tir-webhooks.cluster.local
-    clientConfig:
-      service:
-        name: channelog-service
-        namespace: tir-webhooks
-        path: /inference-hpa
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIekNDQWdlZ0F3SUJBZ0lVVEtNekFxc0xFTGhSY1Q2ZHh1TVNuNjdhQzE4d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0h6RWRNQnNHQTFVRUF3d1VZV1J0YVhOemFXOXVMWGRsWW1odmIyc3RZMkV3SGhjTk1qVXdOekUzTURZMQpPVFUxV2hjTk16VXdOekUxTURZMU9UVTFXakFmTVIwd0d3WURWUVFEREJSaFpHMXBjM05wYjI0dGQyVmlhRzl2CmF5MWpZVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFMQ2dWUUhLY1RxT0JyNWsKTjA4NkpCay9jTTlITkF4cUFCY0pvelRFOS95NGNyZEM2a3M0WjVyOVc5QlhrQldvODdMbW9QM3Y3NzFESE9MUQoyVzRUNWpZOHYvSkVmV1NlcEowdnRJZ0RWRmlCZnpZK2R2RTdWUHp4Znk2NWhHL1VxeUtKemhLcG4wa3JJZGRJClVyWUVNQ3lvSkhSTUJKQVV5TkEybXZnWjVlb1dOY25Gbld2L2ZTRkZsWlF5M3NOK0pBbEJ2VXdZQk9uOEI2K0cKK1ArQ2tWc3dBRGU0ZDJvdDV2bWNPVE9DNXFnZ2tqMW1CZDR5NXVFZVZnaXIyaFc3S05JdnRRNWN5eXUxeDNMNApVZWlxY1FEeFZ3MjBhbnhXVmV5YjdlTmlDZmNwWS9GcDJtQ284STIvUjBxcDBjK3NuRWFKRFBZaUI4L1ZONGZRCjJGV043M1VDQXdFQUFhTlRNRkV3SFFZRFZSME9CQllFRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1COEcKQTFVZEl3UVlNQmFBRkxJM202N3NuSzk5VlVVQ1luNGdFNTh5RmV3Zk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4dwpEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBRHVpVE8yTFJRUHFSY0l5dVFqR3QxVk1ZMytxeDJVakNhZlBEc09BCk5qL0ZyZkFIajhWK2poRlRCSUllUjNPYkwzVFlqU3lxVDRicGNTakFIcWg3ZEJVbXN2bTdob0pXWW1OMUhGV1AKUCtwMWFpQk9sV1FSTGNRenREVWl0eXJjUDZzcVRSZjMrZEpGRVY1a0c0ODZMbSt6bk1halA2UDJZYWlvRkI1eQorK2pINElXYkpCZkg1M0dzWjM4QXFUWXRVbmg1bjRVNkQvNUxOZURWcktLNzVHTitYMmVodGx4MzBFcVRFWWxkCmR2UDZGTk03dVhlR1NYSk96NmcwVzJnVFFqWHRUOEJIazQ2a29XTkJNZnBkSkhPRzZtU3NvREMwSm5tcFVCZnUKOUdTdmd5OURYOUgwL2hRYWdsMGI5NmJSR01LZmxQdHBkYklpaTA1dnNnbVBRUFU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-    matchConditions:
-      - name: customer-namespace
-        expression: |
-          request.namespace.matches("^p-[0-9]+$") ||
-          request.namespace.matches("^multi-[0-9]+$")
-    rules:
-      - operations: ["UPDATE"]
-        apiGroups: ["autoscaling"]
-        apiVersions: ["v2"]
-        resources: ["horizontalpodautoscalers/status"]
-        scope: Namespaced
-    admissionReviewVersions: ["v1"]
-    sideEffects: None
-    timeoutSeconds: 5
+    timeoutSeconds: 10

@@ -2,10 +2,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: admission-channelog
+  name: channelog
   namespace: tir-webhooks
   labels:
-    app: admission-channelog
+    app: channelog
 spec:
   replicas: 2
   strategy:
@@ -15,11 +15,11 @@ spec:
       maxSurge: 0
   selector:
     matchLabels:
-      app: admission-channelog
+      app: channelog
   template:
     metadata:
       labels:
-        app: admission-channelog
+        app: channelog
     spec:
       affinity:
         podAntiAffinity:
@@ -28,7 +28,7 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app: admission-channelog
+                    app: channelog
                 topologyKey: kubernetes.io/hostname
       # mount the host's /dev/ppp
       volumes:
@@ -38,7 +38,7 @@ spec:
 
       containers:
       - name: channelog
-        image: registry.e2enetworks.net/aimle2e/admission-channelog:v2
+        image: registry.e2enetworks.net/aimle2e/channelog:v2
         imagePullPolicy: Always
         args:
           - --tlsCertFile=/certs/tls.crt
@@ -80,4 +80,4 @@ spec:
     protocol: TCP
     name: https
   selector:
-    app: admission-channelog
+    app: channelog

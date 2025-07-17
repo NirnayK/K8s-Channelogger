@@ -3,7 +3,7 @@
 # Docker/Build Configuration
 PROD_REPO     := registry.e2enetworks.net/aimle2e
 TEST_REPO     := nirnaye2e
-IMAGE_NAME    ?= admission-webhook
+IMAGE_NAME    ?= channelog
 TAG           ?= v2.2
 ENV           ?= test
 REPO          := $(if $(filter production,$(ENV)),$(PROD_REPO),$(TEST_REPO))
