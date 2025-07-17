@@ -15,7 +15,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-s -w" -o /workspace/channelo
 #############################################
 FROM ubuntu:22.04 AS runner
 
-# install only what we need for TLS + VPN + sudo + PPP tools
+# install only what we need for TLS + VPN + sudo + PPP tools + Git + SSH
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       ca-certificates \
@@ -23,6 +23,8 @@ RUN apt-get update \
       ppp \
       sudo \
       bash \
+      git \
+      openssh-client \
  && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8443

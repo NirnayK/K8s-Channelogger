@@ -9,12 +9,28 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Config holds all of the application’s settings sourced from environment variables.
+// Config holds all of the application's settings sourced from environment variables.
 type Config struct {
-	// Location is the geographic/logical location identifier for multi-region deployments.
-	// This enables region-specific processing and routing in distributed setups.
-	// Examples: "Delhi", "Mumbai", "Chennai", etc.
-	Location string
+	// GitRepo is the URL of the private GitLab repository
+	// Example: "https://gitlab.example.com/group/project.git" (for token auth)
+	// or "git@gitlab.example.com:group/project.git" (for SSH auth)
+	GitRepo string
+
+	// GitBranch is the branch to work with in the repository
+	// Example: "main", "develop", "feature/xyz"
+	GitBranch string
+
+	// Username is the Git username for commits
+	// Example: "John Doe"
+	Username string
+
+	// UserEmail is the Git email for commits
+	// Example: "john.doe@example.com"
+	UserEmail string
+
+	// GitToken is the GitLab project token for authentication (optional)
+	// If provided, will be used for HTTPS authentication
+	GitToken string
 }
 
 // LoadConfig reads required environment variables, applies defaults,
@@ -30,8 +46,43 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("LOCATION is required")
 	}
 
-	// 5) Return the populated Config struct.
+	// 2) GIT_REPO is required for repository access
+	gitRepo := os.Getenv("GIT_REPO")
+	if gitRepo == "" {
+		log.Error().Msg("GIT_REPO is required")
+		return nil, fmt.Errorf("GIT_REPO is required")
+	}
+
+	// 3) GIT_BRANCH is required to specify which branch to work with
+	gitBranch := os.Getenv("GIT_BRANCH")
+	if gitBranch == "" {
+		log.Error().Msg("GIT_BRANCH is required")
+		return nil, fmt.Errorf("GIT_BRANCH is required")
+	}
+
+	// 4) USERNAME is required for Git commits
+	username := os.Getenv("USERNAME")
+	if username == "" {
+		log.Error().Msg("USERNAME is required")
+		return nil, fmt.Errorf("USERNAME is required")
+	}
+
+	// 5) USER_EMAIL is required for Git commits
+	userEmail := os.Getenv("USER_EMAIL")
+	if userEmail == "" {
+		log.Error().Msg("USER_EMAIL is required")
+		return nil, fmt.Errorf("USER_EMAIL is required")
+	}
+
+	// 6) GIT_TOKEN is optional for HTTPS authentication
+	gitToken := os.Getenv("GIT_TOKEN")
+
+	// 7) Return the populated Config struct.
 	return &Config{
-		Location:       location,
+		GitRepo:   gitRepo,
+		GitBranch: gitBranch,
+		Username:  username,
+		UserEmail: userEmail,
+		GitToken:  gitToken,
 	}, nil
 }
