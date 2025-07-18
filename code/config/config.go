@@ -5,6 +5,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/rs/zerolog/log"
 )
@@ -44,6 +45,9 @@ type Config struct {
 
 	// UserMessageTemplate is the template for user messages with placeholders
 	UserMessageTemplate string
+
+	// OpenAITimeout is the timeout for OpenAI requests
+	OpenAITimeout time.Duration
 }
 
 // LoadConfig reads required environment variables, applies defaults,
@@ -105,7 +109,20 @@ func LoadConfig() (*Config, error) {
 		log.Warn().Msg("USER_MESSAGE_TEMPLATE not set, using empty template")
 	}
 
-	// 10) Return the populated Config struct.
+	// 10) OPENAI_TIMEOUT for OpenAI requests
+	openAITimeoutStr := os.Getenv("OPENAI_TIMEOUT")
+	openAITimeout := 30 * time.Second
+	if openAITimeoutStr != "" {
+		d, err := time.ParseDuration(openAITimeoutStr)
+		if err != nil {
+			log.Warn().Str("OPENAI_TIMEOUT", openAITimeoutStr).
+				Msg("invalid OPENAI_TIMEOUT, using default 30s")
+		} else {
+			openAITimeout = d
+		}
+	}
+
+	// 11) Return the populated Config struct.
 	return &Config{
 		GitRepo:             gitRepo,
 		GitBranch:           gitBranch,
@@ -116,5 +133,6 @@ func LoadConfig() (*Config, error) {
 		OpenAIModel:         openAIModel,
 		SystemPrompt:        systemPrompt,
 		UserMessageTemplate: userMessageTemplate,
+		OpenAITimeout:       openAITimeout,
 	}, nil
 }

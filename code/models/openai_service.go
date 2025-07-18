@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -19,6 +20,7 @@ type OpenAIService struct {
 	model               shared.ChatModel
 	systemPrompt        string
 	userMessageTemplate string
+	timeout             time.Duration
 }
 
 // NewOpenAIService creates a new OpenAI service instance using the provided configuration
@@ -41,6 +43,7 @@ func NewOpenAIService(cfg *config.Config) *OpenAIService {
 		model:               shared.ChatModel(cfg.OpenAIModel),
 		systemPrompt:        cfg.SystemPrompt,
 		userMessageTemplate: cfg.UserMessageTemplate,
+		timeout:             cfg.OpenAITimeout,
 	}
 }
 
@@ -100,6 +103,9 @@ func (s *OpenAIService) GenerateChangelogEntry(ctx context.Context, oldObject, n
 		Int("template_length", len(s.userMessageTemplate)).
 		Int("final_message_length", len(userMessage)).
 		Msg("Generated user message from template")
+
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
 
 	response, err := s.CreateChatCompletionWithSystemPrompt(ctx, userMessage)
 	if err != nil {
