@@ -79,10 +79,10 @@ func GetOperation(c *fiber.Ctx) (admissionv1.Operation, error) {
 }
 
 // ObjectDiff compares two objects and returns a git-style diff string.
-// It takes two map[string]interface{} objects representing the old and new versions,
+// It takes two map[string]any objects representing the old and new versions,
 // converts them to YAML files in a temporary directory, and uses git diff to generate
 // a proper git-style diff output.
-func ObjectDiff(oldObj, newObj map[string]interface{}) (string, error) {
+func ObjectDiff(oldObj, newObj map[string]any) (string, error) {
 	// Create temporary directory
 	tempDir, err := os.MkdirTemp("", "object-diff-*")
 	if err != nil {
@@ -128,8 +128,8 @@ func ObjectDiff(oldObj, newObj map[string]interface{}) (string, error) {
 	return cleanDiffOutput(diffOutput), nil
 }
 
-// writeObjectAsYAML converts a map[string]interface{} to YAML and writes it to a file.
-func writeObjectAsYAML(obj map[string]interface{}, filename string) error {
+// writeObjectAsYAML converts a map[string]any to YAML and writes it to a file.
+func writeObjectAsYAML(obj map[string]any, filename string) error {
 	yamlData, err := yaml.Marshal(obj)
 	if err != nil {
 		return fmt.Errorf("failed to marshal object to YAML: %w", err)
@@ -151,13 +151,6 @@ func cleanDiffOutput(diffOutput string) string {
 			(strings.HasPrefix(line, "---") && strings.Contains(line, "/tmp/")) ||
 			(strings.HasPrefix(line, "+++") && strings.Contains(line, "/tmp/")) {
 			continue
-		}
-
-		// Replace temp file references with meaningful names
-		if strings.HasPrefix(line, "--- ") {
-			line = "--- old"
-		} else if strings.HasPrefix(line, "+++ ") {
-			line = "+++ new"
 		}
 
 		cleanedLines = append(cleanedLines, line)

@@ -6,23 +6,26 @@ import (
 	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/openai/openai-go"
 	"github.com/rs/zerolog/log"
 	admissionv1 "k8s.io/api/admission/v1"
 
 	"channelog/config"
 	"channelog/helpers"
+	"channelog/validation"
 )
 
 // PodBindingService handles AdmissionReview requests for Pod binding events.
 // It delegates to HandleReview using validation.ValidateBindingPod to determine
 // when a Pod has been scheduled onto a node, then enqueues constants.PodNodeBindingTask.
 //
-//	c   – Fiber context wrapping the HTTP request/response.
-//	cfg – Application configuration, including queue settings.
-//	rm  – RabbitManager for publishing tasks.
-func ValidateService(
+//		c   – Fiber context wrapping the HTTP request/response.
+//		cfg – Application configuration, including queue settings.
+//	 modelClient – OpenAI client for generating text responses.
+func CommitService(
 	c *fiber.Ctx,
 	cfg *config.Config,
+	modelClient *openai.Client,
 ) error {
 	var review admissionv1.AdmissionReview
 	if err := json.Unmarshal(c.Body(), &review); err != nil {
@@ -34,24 +37,18 @@ func ValidateService(
 			SendString("could not unmarshal AdmissionReview request")
 	}
 
-	// Check if the admission review is for a pod - if so, allow it and return early
-	if review.Request.Kind.Kind == "Pod" {
-		response := admissionv1.AdmissionResponse{
-			Allowed: true,
-			UID:     review.Request.UID,
-		}
-		review.Response = &response
-
-		return c.
-			Status(fiber.StatusOK).
-			JSON(review)
-	}
-
 	response := admissionv1.AdmissionResponse{
 		Allowed: true,
 		UID:     review.Request.UID,
 	}
 	review.Response = &response
+
+	isEarlyExit := validation.ValidateValidRequest(review)
+	if isEarlyExit {
+		return c.
+			Status(fiber.StatusOK).
+			JSON(review)
+	}
 
 	// Log key fields from the AdmissionRequest for observability.
 	log.Info().
@@ -64,39 +61,51 @@ func ValidateService(
 		Str("path", c.Path()).
 		Msg("received AdmissionReview")
 
-	// Parse the new object if present
-	var newObject map[string]interface{}
-	if review.Request.Object.Raw != nil {
-		if err := json.Unmarshal(review.Request.Object.Raw, &newObject); err != nil {
-			log.Error().Err(err).Msg("could not parse new object raw JSON into map")
-			return c.
-				Status(fiber.StatusInternalServerError).
-				SendString("could not parse new object")
-		}
-	}
+	oldObject, newObject, err := getOldNewObjects(review)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("failed to get old and new objects from AdmissionReview")
 
-	// Parse the old object if present (for UPDATE/DELETE operations)
-	var oldObject map[string]interface{}
-	if review.Request.OldObject.Raw != nil {
-		if err := json.Unmarshal(review.Request.OldObject.Raw, &oldObject); err != nil {
-			log.Error().Err(err).Msg("could not parse old object raw JSON into map")
-			return c.
-				Status(fiber.StatusInternalServerError).
-				SendString("could not parse old object")
-		}
+		return c.
+			Status(fiber.StatusInternalServerError).
+			SendString("failed to get old and new objects from AdmissionReview")
 	}
 
 	objectDiff, err := helpers.ObjectDiff(oldObject, newObject)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to generate object diff")
+
+		return c.
+			Status(fiber.StatusOK).
+			JSON(review)
 	}
 
 	log.Info().
 		Str("object_diff", objectDiff).
 		Msg("object diff generated")
 
-
 	return c.
 		Status(fiber.StatusOK).
 		JSON(review)
+}
+
+func getOldNewObjects(
+	review admissionv1.AdmissionReview,
+) (map[string]any, map[string]any, error) {
+	var newObject map[string]any
+	if review.Request.Object.Raw != nil {
+		if err := json.Unmarshal(review.Request.Object.Raw, &newObject); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	var oldObject map[string]any
+	if review.Request.OldObject.Raw != nil {
+		if err := json.Unmarshal(review.Request.OldObject.Raw, &oldObject); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return oldObject, newObject, nil
 }
