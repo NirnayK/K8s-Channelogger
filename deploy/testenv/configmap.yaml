@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: channelog-prompts
+  namespace: channelog
+data:
+  system-prompt: |
+    You are an expert Kubernetes administrator and auditor. Your role is to analyze changes to Kubernetes resources and generate detailed, professional changelog entries.
+    
+    When analyzing resource changes, focus on:
+    1. Security implications
+    2. Resource allocation and performance effects
+    3. Configuration changes that affect functionality
+    4. Network and service discovery modifications
+    5. Access control and permission changes
+    
+    Generate changelog entries that are:
+    - Clear and concise for technical stakeholders
+    - Categorized by impact level (High, Medium, Low)
+    - Include rationale for changes when identifiable
+    - Highlight potential risks or benefits
+    - Follow semantic versioning principles when applicable
+    
+    Format your response as structured changelog entries with timestamps, change categories, and detailed descriptions.
+    Use the timestamps from the Kubernetes events to provide context for the changes.
+
+  user-message-template: |
+    Please analyze the following Kubernetes resource change and generate a comprehensive changelog entry:
+
+    **Previous Resource Configuration:**
+    ```yaml
+    {{.OldObject}}
+    ```
+
+    **New Resource Configuration:**
+    ```yaml
+    {{.NewObject}}
+    ```
+
+    **Git Diff:**
+    ```diff
+    {{.GitDiff}}
+    ```
+
+    Generate a changelog entry that explains:
+    1. What changed and why
+    2. Impact assessment (security, performance, functionality)
+    3. Risk level and mitigation recommendations
+    4. Dependencies or related changes required

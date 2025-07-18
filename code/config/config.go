@@ -38,6 +38,12 @@ type Config struct {
 
 	// AI Model is the model name to use for OpenAI Compatible requests
 	OpenAIModel string
+
+	// SystemPrompt is the system prompt for OpenAI chat completions
+	SystemPrompt string
+
+	// UserMessageTemplate is the template for user messages with placeholders
+	UserMessageTemplate string
 }
 
 // LoadConfig reads required environment variables, applies defaults,
@@ -87,14 +93,28 @@ func LoadConfig() (*Config, error) {
 		openAIModel = "gpt-4" // Default to GPT-4
 	}
 
-	// 8) Return the populated Config struct.
+	// 8) SYSTEM_PROMPT for OpenAI system messages
+	systemPrompt := os.Getenv("SYSTEM_PROMPT")
+	if systemPrompt == "" {
+		log.Warn().Msg("SYSTEM_PROMPT not set, using empty system prompt")
+	}
+
+	// 9) USER_MESSAGE_TEMPLATE for formatting user messages
+	userMessageTemplate := os.Getenv("USER_MESSAGE_TEMPLATE")
+	if userMessageTemplate == "" {
+		log.Warn().Msg("USER_MESSAGE_TEMPLATE not set, using empty template")
+	}
+
+	// 10) Return the populated Config struct.
 	return &Config{
-		GitRepo:      gitRepo,
-		GitBranch:    gitBranch,
-		Username:     username,
-		UserEmail:    userEmail,
-		GitToken:     gitToken,
-		OpenAIApiUrl: openAIApiUrl,
-		OpenAIModel:  openAIModel,
+		GitRepo:             gitRepo,
+		GitBranch:           gitBranch,
+		Username:            username,
+		UserEmail:           userEmail,
+		GitToken:            gitToken,
+		OpenAIApiUrl:        openAIApiUrl,
+		OpenAIModel:         openAIModel,
+		SystemPrompt:        systemPrompt,
+		UserMessageTemplate: userMessageTemplate,
 	}, nil
 }
