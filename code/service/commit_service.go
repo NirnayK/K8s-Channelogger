@@ -1,5 +1,6 @@
-// Package service provides HTTP handlers for Kubernetes admission channelog endpoints
-// related to Pod binding and status changes.
+// Package service provides HTTP handlers for Kubernetes admission Channelog
+// endpoints. These handlers generate changelog entries and commit them to git
+// based on Kubernetes resource changes.
 package service
 
 import (
@@ -18,13 +19,13 @@ import (
 	"channelog/validation"
 )
 
-// PodBindingService handles AdmissionReview requests for Pod binding events.
-// It delegates to HandleReview using validation.ValidateBindingPod to determine
-// when a Pod has been scheduled onto a node, then enqueues constants.PodNodeBindingTask.
+// CommitService handles AdmissionReview requests and records changelog entries.
+// It skips requests that validation.ValidateValidRequest reports should be
+// ignored, such as Pod objects.
 //
-//		c   – Fiber context wrapping the HTTP request/response.
-//		cfg – Application configuration, including queue settings.
-//	 modelClient – OpenAI client for generating text responses.
+//	c            - Fiber context wrapping the HTTP request/response.
+//	cfg          - Application configuration.
+//	modelService - OpenAI client for generating text responses.
 func CommitService(
 	c *fiber.Ctx,
 	cfg *config.Config,
@@ -45,8 +46,8 @@ func CommitService(
 		UID:     review.Request.UID,
 	}
 
-	isEarlyExit := validation.ValidateValidRequest(review)
-	if isEarlyExit {
+	shouldSkip := validation.ValidateValidRequest(review)
+	if shouldSkip {
 		return c.
 			Status(fiber.StatusOK).
 			JSON(review)
