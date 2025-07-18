@@ -1,9 +1,9 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: all-resources-namespaced-channelog-webhook
+  name: all-resources-channelog-webhook
 webhooks:
-  - name: spec-sync-ns.yourdomain.com
+  - name: sync.channelog.namespacescoped.custom
     clientConfig:
       service:
         name: channelog-service
@@ -24,13 +24,7 @@ webhooks:
     admissionReviewVersions: ["v1"]
     sideEffects: None
     timeoutSeconds: 10
----
-apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
-metadata:
-  name: all-resources-cluster-channelog-webhook
-webhooks:
-  - name: spec-sync-cluster.yourdomain.com
+  - name: sync.channelog.clusterscoped.custom
     clientConfig:
       service:
         name: channelog-service
