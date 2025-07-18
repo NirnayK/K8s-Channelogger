@@ -2,11 +2,14 @@ package validation
 
 import admissionv1 "k8s.io/api/admission/v1"
 
+// ValidateValidRequest determines whether the admission request should be
+// skipped for changelog processing. It returns true when the request should
+// not be processed further, for example when the object kind is Pod.
 func ValidateValidRequest(review admissionv1.AdmissionReview) bool {
-	// Check if the request is valid
-	// Check if the admission review is for a pod - if so, allow it and return early
 	if review.Request.Kind.Kind == "Pod" {
-		return false
+		// Skip Pod objects entirely.
+		return true
 	}
-	return true
+
+	return false
 }
