@@ -1,39 +1,46 @@
 ########################################
-# Builder stage: compile the Go binary
+# Builder stage: compile the Go binary  #
 ########################################
 FROM golang:1.24-alpine AS builder
 
+# Set the module root
 WORKDIR /workspace
+
+# Copy go.mod and go.sum, download dependencies
 COPY code/go.mod code/go.sum ./
 RUN go mod download
 
+# Copy all source code into module root
 COPY code/ ./
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-s -w" -o /workspace/channelog ./cmd/main.go
+
+# Build a statically-linked binary including all imports
+RUN CGO_ENABLED=0 \
+    GOOS=linux \
+    go build -a -ldflags="-s -w" -o /workspace/channelog ./cmd/main.go
 
 #############################################
-# Final stage: minimal runtime environment  #
+# Final stage: minimal runtime environment   #
 #############################################
 FROM ubuntu:22.04 AS runner
 
-# install only what we need for TLS + VPN + sudo + PPP tools + Git + SSH
+# Install only what we need for TLS + Git + SSH tools
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       ca-certificates \
-      openfortivpn \
-      ppp \
-      sudo \
       bash \
-      git \
-      openssh-client \
  && rm -rf /var/lib/apt/lists/*
 
+# Expose the port you listen on (adjust if needed)
 EXPOSE 8443
+
+# Allow mounting certs at /certs
 VOLUME ["/certs"]
 
+# Copy the built binary
 COPY --from=builder /workspace/channelog /usr/local/bin/channelog
-COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
 
-USER root
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["--tlsCertFile=/certs/tls.crt","--tlsKeyFile=/certs/tls.key"]
+# Switch to non-root user for security
+USER nobody:nogroup
+
+# Entrypoint with flags pointing at the mounted TLS cert files
+ENTRYPOINT ["/usr/local/bin/channelog", "--tlsCertFile=/certs/server.crt", "--tlsKeyFile=/certs/server.key"]
