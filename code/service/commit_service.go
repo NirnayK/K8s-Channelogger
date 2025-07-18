@@ -62,6 +62,25 @@ func CommitService(
 		JSON(review)
 }
 
+// getOldNewObjects extracts old and new objects from the admission review
+func getOldNewObjects(review admissionv1.AdmissionReview) (map[string]any, map[string]any, error) {
+	var newObject map[string]any
+	if review.Request.Object.Raw != nil {
+		if err := json.Unmarshal(review.Request.Object.Raw, &newObject); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	var oldObject map[string]any
+	if review.Request.OldObject.Raw != nil {
+		if err := json.Unmarshal(review.Request.OldObject.Raw, &oldObject); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return oldObject, newObject, nil
+}
+
 // commitMessage handles the git commit process for changelog entries
 func commitMessage(
 	review admissionv1.AdmissionReview,
@@ -127,11 +146,7 @@ func commitMessage(
 		return
 	}
 
-	// Clone or update the repository
-	if err := gitService.CloneOrUpdateRepo(workDir); err != nil {
-		log.Error().Err(err).Msg("failed to clone or update repository")
-		return
-	}
+	// Note: Git operations are handled in-memory, no need to clone to disk
 
 	// Format the changelog entry with metadata
 	changelogContent := fmt.Sprintf(`# Changelog Entry
@@ -177,23 +192,4 @@ func commitMessage(
 		Str("filename", fileName).
 		Str("commit_message", gitCommitMessage).
 		Msg("successfully created changelog entry and committed to git")
-}
-
-// getOldNewObjects extracts old and new objects from the admission review
-func getOldNewObjects(review admissionv1.AdmissionReview) (map[string]any, map[string]any, error) {
-	var newObject map[string]any
-	if review.Request.Object.Raw != nil {
-		if err := json.Unmarshal(review.Request.Object.Raw, &newObject); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	var oldObject map[string]any
-	if review.Request.OldObject.Raw != nil {
-		if err := json.Unmarshal(review.Request.OldObject.Raw, &oldObject); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	return oldObject, newObject, nil
 }

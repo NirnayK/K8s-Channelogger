@@ -18,6 +18,13 @@ import (
 	channelconfig "channelog/config"
 )
 
+const (
+	// ClusterScopeFolder is the folder name for cluster-scoped resources
+	// Using "__cluster-scope__" ensures it cannot be a valid k8s namespace name
+	// (k8s namespace names cannot contain underscores)
+	ClusterScopeFolder = "__cluster-scope__"
+)
+
 // GitService provides in-memory git repository operations using go-git
 type GitService struct {
 	repoURL   string
@@ -180,6 +187,9 @@ func (g *GitService) CreateCommit(fileName, content, commitMessage string) error
 }
 
 // GenerateFileName generates a filename for the changelog entry
+// Layout structure:
+// - Cluster-scoped: __cluster-scope__/{kind}/{name}_{timestamp}.yaml
+// - Namespace-scoped: {namespace}/{kind}/{name}_{timestamp}.yaml
 func (g *GitService) GenerateFileName(namespace, name, kind string) string {
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
 	
@@ -187,17 +197,18 @@ func (g *GitService) GenerateFileName(namespace, name, kind string) string {
 	safeName := strings.ReplaceAll(name, "/", "_")
 	safeName = strings.ReplaceAll(safeName, ":", "_")
 	
+	// Generate filename with name and timestamp
+	fileName := fmt.Sprintf("%s_%s.yaml", safeName, timestamp)
+	
 	if namespace != "" {
+		// Namespace-scoped resources: {namespace}/{kind}/{file}
 		safeNamespace := strings.ReplaceAll(namespace, "/", "_")
-		return filepath.Join("changelogs", safeNamespace, fmt.Sprintf("%s_%s_%s.md", timestamp, kind, safeName))
+		safeNamespace = strings.ReplaceAll(safeNamespace, ":", "_")
+		return filepath.Join(safeNamespace, strings.ToLower(kind), fileName)
 	}
-	return filepath.Join("changelogs", "cluster", fmt.Sprintf("%s_%s_%s.md", timestamp, kind, safeName))
-}
-
-// CloneOrUpdateRepo is kept for backward compatibility but does nothing since we use in-memory operations
-func (g *GitService) CloneOrUpdateRepo(workDir string) error {
-	// This method is deprecated but kept for compatibility
-	// In-memory operations don't need disk cloning
-	log.Debug().Msg("CloneOrUpdateRepo called but not needed for in-memory operations")
-	return nil
+	
+	// Cluster-scoped resources: __cluster-scope__/{kind}/{file}
+	// Using "__cluster-scope__" ensures it cannot be a valid k8s namespace name
+	// (k8s namespace names cannot contain underscores)
+	return filepath.Join(ClusterScopeFolder, strings.ToLower(kind), fileName)
 }
