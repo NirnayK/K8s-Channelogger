@@ -180,6 +180,8 @@ func commitChangelogEntry(
 
 // formatChangelogContent formats the changelog entry with metadata
 func formatChangelogContent(review admissionv1.AdmissionReview, changelogEntry string) string {
+	ist, _ := time.LoadLocation("Asia/Kolkata")
+	timestamp := time.Now().In(ist).Format(time.RFC1123)
 	return fmt.Sprintf(`# Changelog Entry
 
 **Resource:** %s/%s  
@@ -199,7 +201,7 @@ func formatChangelogContent(review admissionv1.AdmissionReview, changelogEntry s
 		review.Request.Name,
 		review.Request.Namespace,
 		review.Request.Operation,
-		time.Now().Format("2006-01-02 15:04:05 UTC"),
+		timestamp,
 		review.Request.UID,
 		changelogEntry,
 	)
