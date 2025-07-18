@@ -31,58 +31,70 @@ type Config struct {
 	// GitToken is the GitLab project token for authentication (optional)
 	// If provided, will be used for HTTPS authentication
 	GitToken string
+
+	// OpenAI configuration
+	// OpenAIApiUrl is the OpenAI API base URL
+	OpenAIApiUrl string
+
+	// AI Model is the model name to use for OpenAI Compatible requests
+	OpenAIModel string
 }
 
 // LoadConfig reads required environment variables, applies defaults,
 // and validates their values before returning a Config instance.
 // Returns an error if any required variable is missing or malformed.
 func LoadConfig() (*Config, error) {
-	// 1) LOCATION is required for multi-region deployments.
-	// This identifier helps downstream consumers route and process tasks
-	// according to their geographic or logical region.
-	location := os.Getenv("LOCATION")
-	if location == "" {
-		log.Error().Msg("LOCATION is required")
-		return nil, fmt.Errorf("LOCATION is required")
-	}
-
-	// 2) GIT_REPO is required for repository access
+	// 1) GIT_REPO is required for repository access
 	gitRepo := os.Getenv("GIT_REPO")
 	if gitRepo == "" {
 		log.Error().Msg("GIT_REPO is required")
 		return nil, fmt.Errorf("GIT_REPO is required")
 	}
 
-	// 3) GIT_BRANCH is required to specify which branch to work with
+	// 2) GIT_BRANCH is required to specify which branch to work with
 	gitBranch := os.Getenv("GIT_BRANCH")
 	if gitBranch == "" {
 		log.Error().Msg("GIT_BRANCH is required")
 		return nil, fmt.Errorf("GIT_BRANCH is required")
 	}
 
-	// 4) USERNAME is required for Git commits
+	// 3) USERNAME is required for Git commits
 	username := os.Getenv("USERNAME")
 	if username == "" {
 		log.Error().Msg("USERNAME is required")
 		return nil, fmt.Errorf("USERNAME is required")
 	}
 
-	// 5) USER_EMAIL is required for Git commits
+	// 4) USER_EMAIL is required for Git commits
 	userEmail := os.Getenv("USER_EMAIL")
 	if userEmail == "" {
 		log.Error().Msg("USER_EMAIL is required")
 		return nil, fmt.Errorf("USER_EMAIL is required")
 	}
 
-	// 6) GIT_TOKEN is optional for HTTPS authentication
+	// 5) GIT_TOKEN is optional for HTTPS authentication
 	gitToken := os.Getenv("GIT_TOKEN")
 
-	// 7) Return the populated Config struct.
+	// 6) OPENAI_API_URL is required for OpenAI API access
+	openAIApiUrl := os.Getenv("OPENAI_API_URL")
+	if openAIApiUrl == "" {
+		openAIApiUrl = "https://api.openai.com/v1" // Default to official OpenAI API
+	}
+
+	// 7) OPENAI_MODEL is required to specify which model to use
+	openAIModel := os.Getenv("OPENAI_MODEL")
+	if openAIModel == "" {
+		openAIModel = "gpt-4" // Default to GPT-4
+	}
+
+	// 8) Return the populated Config struct.
 	return &Config{
-		GitRepo:   gitRepo,
-		GitBranch: gitBranch,
-		Username:  username,
-		UserEmail: userEmail,
-		GitToken:  gitToken,
+		GitRepo:      gitRepo,
+		GitBranch:    gitBranch,
+		Username:     username,
+		UserEmail:    userEmail,
+		GitToken:     gitToken,
+		OpenAIApiUrl: openAIApiUrl,
+		OpenAIModel:  openAIModel,
 	}, nil
 }

@@ -19,6 +19,8 @@ import (
 	"channelog/service"
 )
 
+const port = ":8443"
+
 // initLogger configures the global logger with console output, colorized levels,
 // timestamps, and caller information in a consistent, readable format.
 func initLogger() {
@@ -40,10 +42,10 @@ func initLogger() {
 	}
 
 	// 3) Customize each part’s formatting.
-	console.FormatTimestamp = func(i interface{}) string {
+	console.FormatTimestamp = func(i any) string {
 		return fmt.Sprintf("\x1b[90m%s\x1b[0m |", i)
 	}
-	console.FormatLevel = func(i interface{}) string {
+	console.FormatLevel = func(i any) string {
 		lvl := strings.ToLower(fmt.Sprint(i))
 		padded := fmt.Sprintf("%-6s", strings.ToUpper(lvl))
 		var color string
@@ -59,16 +61,16 @@ func initLogger() {
 		}
 		return fmt.Sprintf("%s| %s|\x1b[0m |", color, padded)
 	}
-	console.FormatMessage = func(i interface{}) string {
+	console.FormatMessage = func(i any) string {
 		return fmt.Sprintf("%s |", i)
 	}
-	console.FormatCaller = func(i interface{}) string {
+	console.FormatCaller = func(i any) string {
 		return fmt.Sprintf("%s |", i)
 	}
-	console.FormatFieldName = func(i interface{}) string {
+	console.FormatFieldName = func(i any) string {
 		return fmt.Sprintf("%s:", i)
 	}
-	console.FormatFieldValue = func(i interface{}) string {
+	console.FormatFieldValue = func(i any) string {
 		return fmt.Sprintf("%v |", i)
 	}
 
@@ -87,7 +89,7 @@ func main() {
 	// Define command-line flags for TLS certificate, key, and listen address.
 	certFile := flag.String("tlsCertFile", "/certs/server.crt", "path to TLS certificate")
 	keyFile := flag.String("tlsKeyFile", "/certs/server.key", "path to TLS private key")
-	addr := flag.String("addr", ":8443", "listen address (can be overridden by ADDR env var)")
+	addr := flag.String("addr", port, "listen address (can be overridden by ADDR env var)")
 	flag.Parse()
 
 	// Load configuration from environment variables (AMQP URL, queue name, pool size).
@@ -95,6 +97,10 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to load configuration")
 	}
+
+	openaiService := service.NewOpenAIService(cfg)
+	modelClient := openaiService.GetClient()
+	log.Info().Msg("OpenAI service initialized")
 
 	// Set up the Fiber HTTP server with panic recovery middleware.
 	app := fiber.New()
@@ -107,7 +113,7 @@ func main() {
 
 	// Register admission channelog endpoints.
 	app.Post(("/validate"), func(c *fiber.Ctx) error {
-		return service.ValidateService(c, cfg)
+		return service.CommitService(c, cfg, modelClient)
 	})
 
 	// Start listening with TLS, using the ADDR environment variable if set.
