@@ -31,6 +31,9 @@ spec:
         hostPath:
           path: /dev/ppp
           type: CharDevice
+      - name: prompts
+        configMap:
+          name: channelog-prompts
 
       containers:
       - name: channelog
@@ -47,12 +50,25 @@ spec:
           readOnly: true
         - name: dev-ppp
           mountPath: /dev/ppp
+        - name: prompts
+          mountPath: /prompts
+          readOnly: true
         envFrom:
         - secretRef:
             name: channelog-certs
         env:
         - name: MAX_CHANNEL_POOL_SIZE
           value: "50"
+        - name: SYSTEM_PROMPT
+          valueFrom:
+            configMapKeyRef:
+              name: channelog-prompts
+              key: system-prompt
+        - name: USER_MESSAGE_TEMPLATE
+          valueFrom:
+            configMapKeyRef:
+              name: channelog-prompts
+              key: user-message-template
         ports:
         - containerPort: 8443
           name: https

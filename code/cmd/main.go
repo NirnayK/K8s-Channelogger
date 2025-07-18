@@ -16,6 +16,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"channelog/config"
+	"channelog/models"
 	"channelog/service"
 )
 
@@ -98,8 +99,7 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to load configuration")
 	}
 
-	openaiService := service.NewOpenAIService(cfg)
-	modelClient := openaiService.GetClient()
+	openaiService := models.NewOpenAIService(cfg)
 	log.Info().Msg("OpenAI service initialized")
 
 	// Set up the Fiber HTTP server with panic recovery middleware.
@@ -113,7 +113,7 @@ func main() {
 
 	// Register admission channelog endpoints.
 	app.Post(("/validate"), func(c *fiber.Ctx) error {
-		return service.CommitService(c, cfg, modelClient)
+		return service.CommitService(c, cfg, openaiService)
 	})
 
 	// Start listening with TLS, using the ADDR environment variable if set.
