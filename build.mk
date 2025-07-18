@@ -4,7 +4,7 @@
 PROD_REPO     := registry.e2enetworks.net/aimle2e
 TEST_REPO     := nirnaye2e
 IMAGE_NAME    ?= channelog
-TAG           ?= v2.2
+TAG           ?= v1
 ENV           ?= test
 REPO          := $(if $(filter production,$(ENV)),$(PROD_REPO),$(TEST_REPO))
 IMAGE         := $(REPO)/$(IMAGE_NAME):$(TAG)
@@ -17,7 +17,7 @@ ZIP_FILE      := data.zip
 # TARGET_IP can be changed depending on current available build node
 # This IP represents the remote build server used for consistent environment isolation
 TARGET_IP     := REDACTED
-TARGET_DIR    := /root/webhooks
+TARGET_DIR    := /root/channelog
 NODE_USER     := root
 
 # ─── Build Targets ──────────────────────────────────────────────────────────────
