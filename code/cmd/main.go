@@ -31,7 +31,7 @@ func initLogger() {
 	// 2) Create a ConsoleWriter to format logs with colors and custom part ordering.
 	console := zerolog.ConsoleWriter{
 		Out:        os.Stderr,
-		TimeFormat: time.RFC3339,
+		TimeFormat: time.RFC1123,
 		NoColor:    false,
 		PartsOrder: []string{
 			"time",    // timestamp first

@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -87,7 +86,22 @@ func commitMessage(
 	cfg *config.Config,
 	modelService *models.OpenAIService,
 ) {
-	// Log key fields from the AdmissionRequest for observability.
+	logAdmissionRequest(review)
+
+	changelogEntry, err := generateChangelogEntry(review, modelService)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to generate changelog entry")
+		return
+	}
+
+	if err := commitChangelogEntry(review, cfg, changelogEntry); err != nil {
+		log.Error().Err(err).Msg("failed to commit changelog entry")
+		return
+	}
+}
+
+// logAdmissionRequest logs key fields from the AdmissionRequest for observability
+func logAdmissionRequest(review admissionv1.AdmissionReview) {
 	log.Info().
 		Str("uid", string(review.Request.UID)).
 		Str("kind", review.Request.Kind.String()).
@@ -96,14 +110,14 @@ func commitMessage(
 		Str("namespace", review.Request.Namespace).
 		Str("operation", string(review.Request.Operation)).
 		Msg("received AdmissionReview")
+}
 
+// generateChangelogEntry processes the admission review and generates a changelog entry
+func generateChangelogEntry(review admissionv1.AdmissionReview, modelService *models.OpenAIService) (string, error) {
 	// Get json objects from the request
 	oldObject, newObject, err := getOldNewObjects(review)
 	if err != nil {
-		log.Error().
-			Err(err).
-			Msg("failed to get old and new objects from AdmissionReview")
-		return
+		return "", fmt.Errorf("failed to get old and new objects: %w", err)
 	}
 
 	// Generate a diff between the old and new objects
@@ -123,12 +137,15 @@ func commitMessage(
 
 	// Use the OpenAI service to generate a commit message
 	ctx := context.Background()
-	commitMessage, err := modelService.GenerateChangelogEntry(ctx, oldObjectStr, newObjectStr, objectDiff)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to generate commit message")
-		return
-	}
+	return modelService.GenerateChangelogEntry(ctx, oldObjectStr, newObjectStr, objectDiff)
+}
 
+// commitChangelogEntry creates and commits the changelog entry to git
+func commitChangelogEntry(
+	review admissionv1.AdmissionReview,
+	cfg *config.Config,
+	changelogEntry string,
+) error {
 	// Create git service
 	gitService := NewGitService(cfg)
 
@@ -139,17 +156,31 @@ func commitMessage(
 		review.Request.Kind.Kind,
 	)
 
-	// Create work directory if it doesn't exist
-	workDir := "/tmp/channelog"
-	if err := os.MkdirAll(workDir, 0755); err != nil {
-		log.Error().Err(err).Msg("failed to create work directory")
-		return
+	// Format the changelog entry with metadata
+	changelogContent := formatChangelogContent(review, changelogEntry)
+
+	// Create git commit with the changelog entry
+	gitCommitMessage := fmt.Sprintf("Add changelog for %s/%s (%s)",
+		review.Request.Kind.Kind,
+		review.Request.Name,
+		review.Request.Operation,
+	)
+
+	if err := gitService.CreateCommit(fileName, changelogContent, gitCommitMessage); err != nil {
+		return fmt.Errorf("failed to create git commit for %s: %w", fileName, err)
 	}
 
-	// Note: Git operations are handled in-memory, no need to clone to disk
+	log.Info().
+		Str("filename", fileName).
+		Str("commit_message", gitCommitMessage).
+		Msg("successfully created changelog entry and committed to git")
 
-	// Format the changelog entry with metadata
-	changelogContent := fmt.Sprintf(`# Changelog Entry
+	return nil
+}
+
+// formatChangelogContent formats the changelog entry with metadata
+func formatChangelogContent(review admissionv1.AdmissionReview, changelogEntry string) string {
+	return fmt.Sprintf(`# Changelog Entry
 
 **Resource:** %s/%s  
 **Namespace:** %s  
@@ -170,26 +201,6 @@ func commitMessage(
 		review.Request.Operation,
 		time.Now().Format("2006-01-02 15:04:05 UTC"),
 		review.Request.UID,
-		commitMessage,
+		changelogEntry,
 	)
-
-	// Create git commit with the changelog entry
-	gitCommitMessage := fmt.Sprintf("Add changelog for %s/%s (%s)",
-		review.Request.Kind.Kind,
-		review.Request.Name,
-		review.Request.Operation,
-	)
-
-	if err := gitService.CreateCommit(fileName, changelogContent, gitCommitMessage); err != nil {
-		log.Error().
-			Err(err).
-			Str("filename", fileName).
-			Msg("failed to create git commit")
-		return
-	}
-
-	log.Info().
-		Str("filename", fileName).
-		Str("commit_message", gitCommitMessage).
-		Msg("successfully created changelog entry and committed to git")
 }
