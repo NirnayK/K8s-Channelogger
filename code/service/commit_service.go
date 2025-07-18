@@ -3,15 +3,19 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 	admissionv1 "k8s.io/api/admission/v1"
 
 	"channelog/config"
+	"channelog/helpers"
 	"channelog/models"
-	"channelog/task"
 	"channelog/validation"
 )
 
@@ -51,9 +55,145 @@ func CommitService(
 
 	reviewCopy := review.DeepCopy()
 
-	go task.CommitMessage(*reviewCopy, modelService)
+	go commitMessage(*reviewCopy, cfg, modelService)
 
 	return c.
 		Status(fiber.StatusOK).
 		JSON(review)
+}
+
+// commitMessage handles the git commit process for changelog entries
+func commitMessage(
+	review admissionv1.AdmissionReview,
+	cfg *config.Config,
+	modelService *models.OpenAIService,
+) {
+	// Log key fields from the AdmissionRequest for observability.
+	log.Info().
+		Str("uid", string(review.Request.UID)).
+		Str("kind", review.Request.Kind.String()).
+		Str("resource", review.Request.Resource.String()).
+		Str("name", review.Request.Name).
+		Str("namespace", review.Request.Namespace).
+		Str("operation", string(review.Request.Operation)).
+		Msg("received AdmissionReview")
+
+	// Get json objects from the request
+	oldObject, newObject, err := getOldNewObjects(review)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("failed to get old and new objects from AdmissionReview")
+		return
+	}
+
+	// Generate a diff between the old and new objects
+	objectDiff, err := helpers.ObjectDiff(oldObject, newObject)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to generate object diff")
+	}
+
+	// Convert the jsons to string
+	var oldObjectStr, newObjectStr string
+	if oldObject != nil {
+		oldObjectStr = string(review.Request.OldObject.Raw)
+	}
+	if newObject != nil {
+		newObjectStr = string(review.Request.Object.Raw)
+	}
+
+	// Use the OpenAI service to generate a commit message
+	ctx := context.Background()
+	commitMessage, err := modelService.GenerateChangelogEntry(ctx, oldObjectStr, newObjectStr, objectDiff)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to generate commit message")
+		return
+	}
+
+	// Create git service
+	gitService := NewGitService(cfg)
+
+	// Generate filename based on resource information
+	fileName := gitService.GenerateFileName(
+		review.Request.Namespace,
+		review.Request.Name,
+		review.Request.Kind.Kind,
+	)
+
+	// Create work directory if it doesn't exist
+	workDir := "/tmp/channelog"
+	if err := os.MkdirAll(workDir, 0755); err != nil {
+		log.Error().Err(err).Msg("failed to create work directory")
+		return
+	}
+
+	// Clone or update the repository
+	if err := gitService.CloneOrUpdateRepo(workDir); err != nil {
+		log.Error().Err(err).Msg("failed to clone or update repository")
+		return
+	}
+
+	// Format the changelog entry with metadata
+	changelogContent := fmt.Sprintf(`# Changelog Entry
+
+**Resource:** %s/%s  
+**Namespace:** %s  
+**Operation:** %s  
+**Timestamp:** %s  
+**UID:** %s  
+
+## Change Summary
+
+%s
+
+---
+*Generated automatically by Channelog*
+`,
+		review.Request.Kind.Kind,
+		review.Request.Name,
+		review.Request.Namespace,
+		review.Request.Operation,
+		time.Now().Format("2006-01-02 15:04:05 UTC"),
+		review.Request.UID,
+		commitMessage,
+	)
+
+	// Create git commit with the changelog entry
+	gitCommitMessage := fmt.Sprintf("Add changelog for %s/%s (%s)",
+		review.Request.Kind.Kind,
+		review.Request.Name,
+		review.Request.Operation,
+	)
+
+	if err := gitService.CreateCommit(fileName, changelogContent, gitCommitMessage); err != nil {
+		log.Error().
+			Err(err).
+			Str("filename", fileName).
+			Msg("failed to create git commit")
+		return
+	}
+
+	log.Info().
+		Str("filename", fileName).
+		Str("commit_message", gitCommitMessage).
+		Msg("successfully created changelog entry and committed to git")
+}
+
+// getOldNewObjects extracts old and new objects from the admission review
+func getOldNewObjects(review admissionv1.AdmissionReview) (map[string]any, map[string]any, error) {
+	var newObject map[string]any
+	if review.Request.Object.Raw != nil {
+		if err := json.Unmarshal(review.Request.Object.Raw, &newObject); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	var oldObject map[string]any
+	if review.Request.OldObject.Raw != nil {
+		if err := json.Unmarshal(review.Request.OldObject.Raw, &oldObject); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return oldObject, newObject, nil
 }

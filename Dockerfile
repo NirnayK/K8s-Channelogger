@@ -27,8 +27,6 @@ FROM ubuntu:22.04 AS runner
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       ca-certificates \
-      git \
-      openssh-client \
       bash \
  && rm -rf /var/lib/apt/lists/*
 
@@ -40,12 +38,9 @@ VOLUME ["/certs"]
 
 # Copy the built binary
 COPY --from=builder /workspace/channelog /usr/local/bin/channelog
-COPY scripts/entrypoint-production.sh /usr/local/bin/entrypoint-production.sh
-RUN chmod +x /usr/local/bin/entrypoint-production.sh
 
-# Use root for initial setup, but entrypoint can switch users if needed
-USER root
+# Switch to non-root user for security
+USER nobody:nogroup
 
 # Entrypoint with flags pointing at the mounted TLS cert files
-ENTRYPOINT ["/usr/local/bin/entrypoint-production.sh"]
-CMD ["--tlsCertFile=/certs/server.crt", "--tlsKeyFile=/certs/server.key"]
+ENTRYPOINT ["/usr/local/bin/channelog", "--tlsCertFile=/certs/server.crt", "--tlsKeyFile=/certs/server.key"]
