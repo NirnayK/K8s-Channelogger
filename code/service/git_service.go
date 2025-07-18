@@ -197,21 +197,21 @@ func (g *GitService) GenerateFileName(namespace, name, kind string) string {
 	// Replace spaces and colons with underscores for filesystem safety
 	timestamp = strings.ReplaceAll(timestamp, " ", "_")
 	timestamp = strings.ReplaceAll(timestamp, ":", "-")
-	
+
 	// Sanitize the name to be filesystem-safe
 	safeName := strings.ReplaceAll(name, "/", "_")
 	safeName = strings.ReplaceAll(safeName, ":", "_")
-	
+
 	// Generate filename with name and timestamp
 	fileName := fmt.Sprintf("%s_%s.yaml", safeName, timestamp)
-	
+
 	if namespace != "" {
 		// Namespace-scoped resources: {namespace}/{kind}/{file}
 		safeNamespace := strings.ReplaceAll(namespace, "/", "_")
 		safeNamespace = strings.ReplaceAll(safeNamespace, ":", "_")
 		return filepath.Join(safeNamespace, strings.ToLower(kind), fileName)
 	}
-	
+
 	// Cluster-scoped resources: __cluster-scope__/{kind}/{file}
 	// Using "__cluster-scope__" ensures it cannot be a valid k8s namespace name
 	// (k8s namespace names cannot contain underscores)
