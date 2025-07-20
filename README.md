@@ -19,9 +19,6 @@ The service configuration is entirely sourced from environment variables. The fo
 | `SYSTEM_PROMPT`        | System prompt text passed to completions (optional).                          | empty   |
 | `USER_MESSAGE_TEMPLATE`| Template for user messages sent to the API (optional).                        | empty   |
 | `ADDR`                 | Listen address for the HTTPS server.                                          | `:8443` |
-| `DEFAULT_RABBITMQ_QUEUE` | Default queue name for RabbitMQ (optional, used by deployment manifests).   | –       |
-| `RABBITMQ_URL`         | RabbitMQ connection URL (optional, used by deployment manifests).            | –       |
-| `LOCATION`             | Deployment location string (optional).                                        | –       |
 
 These variables can be provided directly or via Kubernetes secrets. See `deploy/testenv/secret_test.yaml.template` for an example template.
 

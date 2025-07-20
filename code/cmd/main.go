@@ -1,6 +1,6 @@
 // Package main is the entry point for the admission channelog service.
-// It initializes logging, loads configuration, sets up RabbitMQ connectivity,
-// registers HTTP handlers for various Kubernetes resources, and starts an HTTPS server.
+// It initializes logging, loads configuration, registers HTTP handlers for various
+// Kubernetes resources, and starts an HTTPS server.
 package main
 
 import (
