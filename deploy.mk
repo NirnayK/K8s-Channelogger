@@ -10,6 +10,7 @@ SED_INPLACE   := $(shell if sed --version >/dev/null 2>&1; then echo "sed -i"; e
 # Determine deployment directory and files based on ENV
 DEPLOY_DIR    := $(if $(filter $(PRODUCTION_ENV),$(ENV)),deploy,deploy/testenv)
 SECRET_FILE   := $(if $(filter $(PRODUCTION_ENV),$(ENV)),$(DEPLOY_DIR)/secret.yaml,$(DEPLOY_DIR)/secret_test.yaml)
+CONFIGMAP_FILE := $(DEPLOY_DIR)/configmap.yaml
 CONFIG_FILE   := $(DEPLOY_DIR)/config.yaml
 DEPLOYMENT_FILE := $(DEPLOY_DIR)/deployment.yaml
 
@@ -49,6 +50,12 @@ k8s-deploy-update: ## Patch deployment.yaml with new image and rollout (ENV=$(PR
 	  echo "❌ Error: Secret file $(SECRET_FILE) not found"; \
 	  exit 1; \
 	fi
+	@if [ -f $(CONFIGMAP_FILE) ]; then \
+	  kubectl apply -f $(CONFIGMAP_FILE); \
+	else \
+	  echo "❌ Error: ConfigMap file $(CONFIGMAP_FILE) not found"; \
+	  exit 1; \
+	fi
 	kubectl apply -f $(CONFIG_FILE)
 	kubectl apply -f $(DEPLOYMENT_FILE)
 	kubectl -n $(K8S_NAMESPACE) rollout restart deployment/channelog
@@ -66,6 +73,9 @@ delete-all: ## Delete all resources in the k8s namespace (ENV=$(PRODUCTION_ENV) 
 	@echo "🔧 Using deployment directory: $(DEPLOY_DIR) (ENV=$(ENV))"
 	kubectl delete -f $(CONFIG_FILE) || true
 	kubectl delete -n $(K8S_NAMESPACE) -f $(DEPLOYMENT_FILE) || true
+	@if [ -f $(CONFIGMAP_FILE) ]; then \
+	  kubectl delete -n $(K8S_NAMESPACE) -f $(CONFIGMAP_FILE) || true; \
+	fi
 	@if [ -f $(SECRET_FILE) ]; then \
 	  kubectl delete -n $(K8S_NAMESPACE) -f $(SECRET_FILE) || true; \
 	fi
