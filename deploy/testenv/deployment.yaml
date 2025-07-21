@@ -37,7 +37,7 @@ spec:
 
       containers:
       - name: channelog
-        image: nirnaye2e/channelog:v2.2
+        image: nirnaye2e/channelog:v1
         imagePullPolicy: Always
         args:
           - --tlsCertFile=/certs/tls.crt
@@ -57,8 +57,6 @@ spec:
         - secretRef:
             name: channelog-certs
         env:
-        - name: MAX_CHANNEL_POOL_SIZE
-          value: "50"
         - name: SYSTEM_PROMPT
           valueFrom:
             configMapKeyRef:

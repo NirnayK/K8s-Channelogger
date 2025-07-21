@@ -56,8 +56,8 @@ k8s-deploy-update: ## Patch deployment.yaml with new image and rollout (ENV=$(PR
 	  echo "❌ Error: ConfigMap file $(CONFIGMAP_FILE) not found"; \
 	  exit 1; \
 	fi
-	kubectl apply -f $(CONFIG_FILE)
 	kubectl apply -f $(DEPLOYMENT_FILE)
+	kubectl apply -f $(CONFIG_FILE)
 	kubectl -n $(K8S_NAMESPACE) rollout restart deployment/channelog
 
 	@echo "⏳ Waiting for rollout to finish…"

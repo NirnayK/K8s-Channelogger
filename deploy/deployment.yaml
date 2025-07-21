@@ -59,8 +59,6 @@ spec:
         - secretRef:
             name: channelog-certs
         env:
-        - name: MAX_CHANNEL_POOL_SIZE
-          value: "50"
         - name: SYSTEM_PROMPT
           valueFrom:
             configMapKeyRef:
