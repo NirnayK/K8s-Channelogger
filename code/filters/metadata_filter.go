@@ -1,5 +1,7 @@
 package filters
 
+import "maps"
+
 // MetadataFilterCondition removes commonly changing metadata fields
 type MetadataFilterCondition struct{}
 
@@ -15,16 +17,12 @@ func (mfc *MetadataFilterCondition) Apply(obj map[string]any) map[string]any {
 
 	// Create a deep copy to avoid modifying the original
 	filtered := make(map[string]any)
-	for k, v := range obj {
-		filtered[k] = v
-	}
+	maps.Copy(filtered, obj)
 
 	// Remove or filter metadata fields that commonly change without meaningful updates
 	if metadata, exists := filtered["metadata"].(map[string]any); exists {
 		filteredMetadata := make(map[string]any)
-		for k, v := range metadata {
-			filteredMetadata[k] = v
-		}
+		maps.Copy(filteredMetadata, metadata)
 
 		// Remove fields that frequently change without representing meaningful updates
 		delete(filteredMetadata, "resourceVersion")     // Always changes on updates
@@ -59,14 +57,6 @@ func (mfc *MetadataFilterCondition) Apply(obj map[string]any) map[string]any {
 	delete(filtered, "status")
 
 	return filtered
-}
-
-// filterMetadataFields removes commonly changing metadata fields that don't represent
-// meaningful configuration changes. This helps focus on actual spec/configuration changes.
-// Deprecated: Use MetadataFilterCondition.Apply() instead for the new interface-based approach.
-func filterMetadataFields(obj map[string]any) map[string]any {
-	condition := &MetadataFilterCondition{}
-	return condition.Apply(obj)
 }
 
 // isControllerAnnotation checks if an annotation key is typically managed by controllers
