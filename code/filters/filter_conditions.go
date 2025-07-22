@@ -25,11 +25,6 @@ func NewFilterConditions() *FilterConditions {
 	}
 }
 
-// AddCondition adds a new filter condition
-func (fc *FilterConditions) AddCondition(condition FilterCondition) {
-	fc.conditions = append(fc.conditions, condition)
-}
-
 // ApplyAll applies all filter conditions to an object
 func (fc *FilterConditions) ApplyAll(obj map[string]any) map[string]any {
 	if obj == nil {
