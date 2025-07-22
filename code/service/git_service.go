@@ -192,7 +192,11 @@ func (g *GitService) CreateCommit(fileName, content, commitMessage string) error
 // - Namespace-scoped: {namespace}/{kind}/{name}_{timestamp}.yaml
 func (g *GitService) GenerateFileName(namespace, name, kind string) string {
 	// Use IST timezone (UTC+5:30) with RFC1123 format
-	ist, _ := time.LoadLocation("Asia/Kolkata")
+	ist, err := time.LoadLocation("Asia/Kolkata")
+	if err != nil {
+		// Fallback to UTC if Asia/Kolkata timezone cannot be loaded
+		ist = time.UTC
+	}
 	timestamp := time.Now().In(ist).Format(time.RFC1123)
 	// Replace spaces and colons with underscores for filesystem safety
 	timestamp = strings.ReplaceAll(timestamp, " ", "_")
